@@ -1,8 +1,8 @@
 {
-  "name": "component-library",
-  "version": "1.2.0",
-  "description": "Modular, reusable components and styles for use in web applications.",
-  "private": true,
+  "name": "vue-dj-gantt",
+  "version": "0.1.0",
+  "description": "Simple Gantt diagram component for Vue.",
+  "private": false,
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build --target lib --name component-library src/index.js",
@@ -28,6 +28,7 @@
     "README.md"
   ],
   "dependencies": {
+    "moment": "^2.27.0",
     "vue": "^2.6.11",
     "vuetify": "^2.3.8"
   },
