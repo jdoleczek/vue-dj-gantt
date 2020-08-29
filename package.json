@@ -1,6 +1,6 @@
 {
   "name": "vue-dj-gantt",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Simple Gantt diagram component for Vue.",
   "private": false,
   "scripts": {
