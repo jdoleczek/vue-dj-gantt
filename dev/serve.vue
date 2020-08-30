@@ -1,21 +1,11 @@
-<template>
-  <div>
-    <div class="content">
-      <h1>Basic usage</h1>
-      <dj-gantt
-        :config="ganttConfig"
-        :rows="rows"
-        :items="items"
-      />
-    </div>
-  </div>
-</template>
-
 <script>
-export default {
-  name: "App",
+import Vue from 'vue';
+import VueDjGantt from '@/VueDjGantt.vue';
+
+export default Vue.extend({
+  name: 'ServeDev',
   components: {
-    DjGantt: () => import("./components/DjGantt.vue"),
+    VueDjGantt
   },
   data() {
     return {
@@ -89,7 +79,7 @@ export default {
         {
           id: 1,
           rowId: 2,
-          label: `Some task`,
+          label: `Other task`,
           style: {background: '#abf224'},
           time: {
             start: (+ +new Date()) + (0.5 * 24 * 60 * 60 * 1000),
@@ -99,8 +89,21 @@ export default {
       ],
     }
   },
-};
+});
 </script>
+
+<template>
+  <div id="app">
+    <div class="content">
+      <h1>Basic usage</h1>
+      <VueDjGantt
+        :config="ganttConfig"
+        :rows="rows"
+        :items="items"
+      />
+    </div>
+  </div>
+</template>
 
 <style lang="scss">
 .content {

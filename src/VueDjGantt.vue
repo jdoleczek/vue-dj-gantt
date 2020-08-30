@@ -292,7 +292,7 @@ const zoomParams = {
 };
 
 export default {
-  name: "DjGantt",
+  name: "VueDjGantt",
 
   props: {
     config: { type: Object },
@@ -774,7 +774,7 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 $header-background: #f8f8f8;
 $header-color: #606060;
 
