@@ -1,3 +1,39 @@
+<template>
+  <div id="app">
+    <div class="content">
+      <h1>Basic usage</h1>
+      <VueDjGantt
+        :list="list"
+        :rows="rows"
+        :items="items"
+      />
+
+      <h1>No parameters</h1>
+      <VueDjGantt
+      />
+
+      <h1>Custom dates</h1>
+      <VueDjGantt
+        :list="list"
+        :rows="rows"
+        :items="items"
+        :from="from"
+        :to="to"
+      />
+
+      <h1>Play with height</h1>
+      <VueDjGantt
+        :list="list"
+        :rows="rows"
+        :items="items"
+        :from="from"
+        :to="to"
+        :height="100"
+      />
+    </div>
+  </div>
+</template>
+
 <script>
 import Vue from 'vue';
 import VueDjGantt from '@/VueDjGantt.vue';
@@ -9,49 +45,27 @@ export default Vue.extend({
   },
   data() {
     return {
-      ganttConfig: {
-        locale: {
-          weekdays: ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'],
-          weekdaysShort: ['N', 'Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So'],
-          weekdaysMin: ['N', 'Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So'],
-          months: ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec', 'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'],
-          monthsShort: ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze', 'Lip', 'Sie', 'Wrz', 'Paź', 'Lis', 'Gru'],
+      list: {
+        internalId: {
+          id: "internalId",
+          data: "internalId",
+          width: 80,
+          header: {
+            content: "ID"
+          }
         },
-        height: window.innerHeight - 190,
-        list: {
-          rows: {},
-          columns: {
-            data: {
-              internalId: {
-                id: "internalId",
-                data: "internalId",
-                width: 80,
-                header: {
-                  content: "ID"
-                }
-              },
-              name: {
-                id: "name",
-                data: "name",
-                width: 200,
-                header: {
-                  content: "Nazwa"
-                }
-              }
-            }
-          },
-          toggle: {
-            display: false,
-          },
-        },
-        chart: {
-          items: {},
-          time: {
-            from: (+ +new Date()) - (7 * 24 * 60 * 60 * 1000),
-            to: (+ +new Date()) + (90 * 24 * 60 * 60 * 1000),
-          },
+        name: {
+          id: "name",
+          data: "name",
+          width: 200,
+          header: {
+            content: "Nazwa"
+          }
         },
       },
+
+      from: (+ +new Date()) - (2 * 24 * 60 * 60 * 1000),
+      to: (+ +new Date()) + (4 * 24 * 60 * 60 * 1000),
 
       rows: [
         {
@@ -65,6 +79,7 @@ export default Vue.extend({
           name: 'Second',
         },
       ],
+
       items: [
         {
           id: 1,
@@ -92,20 +107,11 @@ export default Vue.extend({
 });
 </script>
 
-<template>
-  <div id="app">
-    <div class="content">
-      <h1>Basic usage</h1>
-      <VueDjGantt
-        :config="ganttConfig"
-        :rows="rows"
-        :items="items"
-      />
-    </div>
-  </div>
-</template>
-
 <style lang="scss">
+html, body {
+  font-family: Tahoma, Verdana, Arial;
+}
+
 .content {
   background: #f8f8f8;
   padding: 5rem 8rem 8rem;

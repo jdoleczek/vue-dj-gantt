@@ -2,16 +2,17 @@
   <div
     ref="gantt"
     class="gantt"
-    :style="{ height: `${config.height}px` }"
+    :style="{ height: px(componentHeight) }"
+    @wheel="scrollBasic"
   >
     <div
       class="gantt-rows"
       @wheel="scrollRows"
     >
       <div
-        v-for="(rowHeader, rowHeaderIndex) in config.list.columns.data"
+        v-for="(rowHeader, rowHeaderIndex) in list"
         :key="rowHeaderIndex"
-        :style="{ width: `${rowHeader.width}px` }"
+        :style="{ width: px(rowHeader.width) }"
         class="gantt-row"
       >
         <div class="gantt-row-header">
@@ -25,7 +26,7 @@
         <div
           ref="rowlabel"
           class="gantt-row-header-data"
-          :style="{ width: `${rowHeader.width}px`, height: dataHeight }"
+          :style="{ width: px(rowHeader.width), height: px(dataHeight) }"
           @mousemove="onRowsHeaderMove"
         >
           <div
@@ -54,7 +55,7 @@
               v-for="(slot, slotIndex) in dataSlots.calendar"
               :key="slotIndex"
               :style="{
-                width: `${Math.max(slot.width, 260)}px`,
+                width: px(Math.max(slot.width, 260)),
                 left: slot.offset,
               }"
               class="gantt-data-header-calendar-date"
@@ -65,17 +66,17 @@
         </div>
         <div
           ref="dataslots"
-          :style="{ width: dataWidth }"
+          :style="{ width: px(dataWidth) }"
           class="gantt-data-header-slots-wrap"
         >
           <div
             class="gantt-data-header-slots"
-            :style="{ width: dataTotalWidth }"
+            :style="{ width: px(dataTotalWidth) }"
           >
             <div
               v-for="(slot, slotIndex) in dataSlots.slots"
               :key="slotIndex"
-              :style="{ width: dataSlotWidth, left: slot.offset }"
+              :style="{ width: px(dataSlotWidth), left: slot.offset }"
               class="gantt-data-header-slot"
             >
               <div
@@ -109,22 +110,22 @@
           </div>
         </div>
       </div>
-      <div :style="{ height: dataHeight }" class="gantt-data-wrap-with-scroll">
+      <div :style="{ height: px(dataHeight) }" class="gantt-data-wrap-with-scroll">
         <div ref="scrolly" class="gantt-data-y-scroll" @scroll="onYScroll">
           <div
             class="gantt-data-y-scroll-ref"
-            :style="{ height: dataTotalHeight }"
+            :style="{ height: px(dataTotalHeight) }"
           />
         </div>
         <div
           ref="cells"
-          :style="{ width: dataWidth, height: dataHeight }"
+          :style="{ width: px(dataWidth), height: px(dataHeight) }"
           class="gantt-data-wrap"
         >
           <div
             ref="cellswrap"
             class="gantt-data-wrapped"
-            :style="{ width: dataTotalWidth, height: dataTotalHeight }"
+            :style="{ width: px(dataTotalWidth), height: px(dataTotalHeight) }"
             @mousedown="onDataMouseDown"
             @mouseup="onDataMouseUp"
             @mousemove="onDataMove"
@@ -196,7 +197,7 @@
       <div ref="scrollx" class="gantt-data-x-scroll" @scroll="onXScroll">
         <div
           class="gantt-data-x-scroll-ref"
-          :style="{ width: dataTotalWidth }"
+          :style="{ width: px(dataTotalWidth) }"
         />
       </div>
     </div>
@@ -295,9 +296,29 @@ export default {
   name: "VueDjGantt",
 
   props: {
-    config: { type: Object },
-    rows: { type: Array },
-    items: { type: Array },
+    from: {},
+    to: {},
+
+    height: {
+      type: Number,
+      default: 0,
+    },
+
+    list: {
+      type: Object,
+      default: () => {},
+    },
+
+    rows: {
+      type: Array,
+      default: () => [],
+    },
+
+    items: {
+      type: Array,
+      default: () => [],
+    },
+
     cells: { type: Object },
     snapStartFunction: { type: Function },
     snapEndFunction: { type: Function },
@@ -335,19 +356,44 @@ export default {
       selectTo: null,
       selectedCellsBox: {},
       selectedCells: {},
+
+      fromTime: this.from ? new moment(this.from) : (new moment()).startOf('day').add(-7, 'days'),
+      toTime: this.to ? new moment(this.to) : (new moment()).startOf('day').add(3, 'months'),
     };
   },
 
   methods: {
+    px(n) {
+      return `${n}px`
+    },
+
+    get(object, keys, defaultVal = null) {
+      keys = Array.isArray(keys) ? keys : keys.replace(/(\[(\d)\])/g, '.$2').split('.');
+      object = object[keys[0]];
+
+      if (object && keys.length > 1) {
+        return this.__get(object, keys.slice(1), defaultVal);
+      }
+
+      return object === undefined ? defaultVal : object;
+    },
+
+    scrollBasic(ev) {
+      if (ev.ctrlKey) {
+        ev.stopPropagation()
+        ev.preventDefault()
+      }
+    },
+
     scrollData(ev) {
       if (ev.ctrlKey) {
         const zoom = (modifie) => {
-          const dataWidth = this.dataWidth_;
+          const dataWidth = this.dataWidth;
           const halfDataWidth = dataWidth / 2;
-          const w1 = Math.max(this.dataTotalWidth_, dataWidth);
+          const w1 = Math.max(this.dataTotalWidth, dataWidth);
           const o1 = this.xOffset + halfDataWidth;
           this.zoom += modifie;
-          let w2 = Math.max(this.dataTotalWidth_, dataWidth);
+          let w2 = Math.max(this.dataTotalWidth, dataWidth);
           this.scrollX(~~Math.max(0, ((o1 * w2) / w1) - halfDataWidth));
         }
 
@@ -369,7 +415,7 @@ export default {
     },
 
     scrollX(scrollLeft) {
-      let x = Math.max(0, Math.min(this.dataTotalWidth_ - this.dataWidth_, scrollLeft));
+      let x = Math.max(0, Math.min(this.dataTotalWidth - this.dataWidth, scrollLeft));
       this.xOffset = x;
       this.$refs.scrollx.scrollLeft = x;
       this.$refs.datacalendar.scrollLeft = x;
@@ -378,11 +424,14 @@ export default {
     },
 
     scrollY (scrollTop) {
-      let y = Math.max(0, Math.min(this.dataTotalHeight_ - this.dataHeight_, scrollTop));
+      let y = Math.max(0, Math.min(this.dataTotalHeight - this.dataHeight, scrollTop));
       this.yOffset = y;
       this.$refs.scrolly.scrollTop = y;
       this.$refs.cells.scrollTop = y;
-      this.$refs.rowlabel.forEach(el => el.scrollTop = y);
+
+      if (this.$refs.rowlabel) {
+        this.$refs.rowlabel.forEach(el => el.scrollTop = y);
+      }
     },
 
     onXScroll (ev) {
@@ -466,7 +515,7 @@ export default {
           this.resizeItem.item.time.end = time
         } else if (this.moveItem) {
           let time = this.moveItem.item.time.start + Math.round(ev.movementX / this.pxPerMs)
-          let refFrom = moment(this.config.chart.time.from).startOf("day")
+          let refFrom = moment(this.fromTime).startOf("day")
 
           if (this.snapStartFunction) {
             time = this.snapStartFunction(this.moveItem.item.time.start, Math.round(ev.movementX / this.pxPerMs), this.moveItem.item) || time
@@ -516,68 +565,47 @@ export default {
   },
 
   computed: {
-    headerRowsWidth_ () {
-      return Object.values(this.config.list.columns.data).reduce((acc, cur) => acc + cur.width, 0)
-    },
-
     headerRowsWidth () {
-      return `${this.headerRowsWidth_}px`
+      return Object.values(this.list || {}).reduce((acc, cur) => acc + cur.width, 0)
     },
 
-    dataHeight_ () {
-      return this.config.height - 72
+    componentHeight () {
+      return Math.max(72, this.height || (this.dataTotalHeight + 72));
     },
 
     dataHeight () {
-      return `${this.dataHeight_}px`
-    },
-
-    dataWidth_ () {
-      return this.width - this.headerRowsWidth_
+      return Math.max(0, this.componentHeight - 72);
     },
 
     dataWidth () {
-      return `${this.dataWidth_}px`
-    },
-
-    dataTotalHeight_ () {
-      return Object.keys(this.rows).length * colHeight
+      return this.width - this.headerRowsWidth
     },
 
     dataTotalHeight () {
-      return `${this.dataTotalHeight_}px`
-    },
-
-    dataTotalWidth_ () {
-      return this.dataTotalSlots * zoomParams[this.zoom].width
+      return Object.keys(this.rows).length * colHeight
     },
 
     dataTotalWidth () {
-      return `${this.dataTotalWidth_}px`
+      return this.dataTotalSlots * zoomParams[this.zoom].width
     },
 
     dataTotalSlots () {
-      let time = this.config.chart.time
-      return ~~((time.to - time.from) / zoomParams[this.zoom].slot)
-    },
-
-    dataSlotWidth_ () {
-      return zoomParams[this.zoom].width
+      let delta = Math.max(this.toTime.valueOf() - this.fromTime.valueOf(), 0)
+      return Math.floor(delta / zoomParams[this.zoom].slot)
     },
 
     dataSlotWidth () {
-      return `${this.dataSlotWidth_}px`
+      return zoomParams[this.zoom].width
     },
 
     dataSlots () {
-      let time = this.config.chart.time
-      let from = moment(time.from).startOf("day")
+      let from = moment(this.fromTime).startOf("day")
       let slotPeriod = zoomParams[this.zoom].slot
       let slotWidth = zoomParams[this.zoom].width
-      let slotsCount = ~~((time.to - time.from) / slotPeriod)
+      let slotsCount = ~~((this.toTime.valueOf() - this.fromTime.valueOf()) / slotPeriod)
       let slots = []
       let xOffset = this.xOffset
-      let xOffsetEnd = xOffset + this.dataWidth_
+      let xOffsetEnd = xOffset + this.dataWidth
       let offset = 0
       let calendar = []
       let calendarRef = null
@@ -585,7 +613,7 @@ export default {
       for (let i = 0; i < slotsCount; i++) {
         if (offset + slotWidth > xOffset && offset < xOffsetEnd) {
           slots.push({
-            offset: `${ Math.max(offset, xOffset) - 1 }px`,
+            offset: this.px(Math.max(offset, xOffset) - 1),
             offset_: Math.max(offset, xOffset) - 1,
             moment: moment(from),
           })
@@ -597,7 +625,7 @@ export default {
 
             calendar.push({
               moment: moment(from),
-              offset: `${ Math.max(offset, xOffset) - 1 }px`,
+              offset: this.px(Math.max(offset, xOffset) - 1),
               width: slotWidth,
             })
           } else {
@@ -626,7 +654,7 @@ export default {
 
     visibleRows () {
       let from = Math.floor(this.yOffset / colHeight)
-      let count = Math.ceil(this.dataHeight_ / colHeight) + 1
+      let count = Math.ceil(this.dataHeight / colHeight) + 1
 
       return Object.values(this.rows).slice(from, from + count).map((row, k) => ({
         row,
@@ -667,9 +695,8 @@ export default {
       }
 
       let to = from + (this.dataSlots.slots.length * slotPeriod)
-      let refFrom = moment(this.config.chart.time.from).startOf("day")
-      let dataSlotWidth = this.dataSlotWidth_
-      // this.selectedCellsBox = {}
+      let refFrom = moment(this.fromTime).startOf("day")
+      let dataSlotWidth = this.dataSlotWidth
 
       this.visibleRows.forEach(row => {
         this.dataSlots.slots.forEach(slot => {
@@ -762,10 +789,21 @@ export default {
     zoom () {
       this.selectedCells = {}
     },
+
+    from() {
+      this.fromTime = this.from ? new moment(this.from) : (new moment()).startOf('day').add(-7, 'days')
+    },
+
+    to() {
+      this.toTime = this.to ? moment(this.to) : moment(this.from).startOf('day').add(3, 'months')
+    },
   },
 
   mounted () {
-    moment.locale("pl-my", this.config.locale)
+    // todo locale
+    // moment.locale("pl-my", this.config.locale)
+    // this.fromTime = this.from ? moment(this.from) : moment().startOf('day').add(-7, 'days')
+    // this.toTime = this.to ? moment(this.to) : moment().startOf('day').add(3, 'months')
     this.width = this.$refs.gantt.clientWidth
     this.cellsAndDataEditable = JSON.parse(JSON.stringify(this.cellsAndData))
     this.scrollX(0)

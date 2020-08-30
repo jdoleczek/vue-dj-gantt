@@ -45,5 +45,32 @@
   },
   "engines": {
     "node": ">=10"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jdoleczek/vue-dj-gantt.git"
+  },
+  "keywords": [
+    "gantt",
+    "gantt js",
+    "gantt chart",
+    "javascript gantt",
+    "javascript gantt chart",
+    "vue gantt",
+    "js gantt",
+    "gantt-chart",
+    "responsive",
+    "vue",
+    "vue-gantt",
+    "project gantt",
+    "responsive gantt",
+    "gantt component",
+    "vue gantt component",
+    "vue dj"
+  ],
+  "author": "Jan Doleczek <jan@doleczek.pl> (https://doleczek.pl)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jdoleczek/vue-dj-gantt/issues"
   }
 }
