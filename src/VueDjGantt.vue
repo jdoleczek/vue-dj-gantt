@@ -49,8 +49,8 @@
         class="gantt-data-header"
         @mousemove="onDataHeaderMove"
       >
-        <div ref="datacalendar" class="gantt-data-header-calendar-wrap">
-          <div class="gantt-data-header-calendar">
+        <div ref="datacalendar" class="gantt-data-header-calendar-wrap" :style="{ width: px(dataWidth) }">
+          <div class="gantt-data-header-calendar" :style="{ width: px(dataTotalWidth) }">
             <div
               v-for="(slot, slotIndex) in dataSlots.calendar"
               :key="slotIndex"
@@ -299,6 +299,11 @@ export default {
     from: {},
     to: {},
 
+    locale: {
+      type: String,
+      default: 'en',
+    },
+
     height: {
       type: Number,
       default: 0,
@@ -357,8 +362,8 @@ export default {
       selectedCellsBox: {},
       selectedCells: {},
 
-      fromTime: this.from ? new moment(this.from) : (new moment()).startOf('day').add(-7, 'days'),
-      toTime: this.to ? new moment(this.to) : (new moment()).startOf('day').add(3, 'months'),
+      fromTime: this.from ? moment(this.from) : moment().startOf('day').add(-7, 'days'),
+      toTime: this.to ? moment(this.to) : moment().startOf('day').add(1, 'months'),
     };
   },
 
@@ -599,7 +604,7 @@ export default {
     },
 
     dataSlots () {
-      let from = moment(this.fromTime).startOf("day")
+      let from = moment(this.fromTime).locale(this.locale).startOf("day")
       let slotPeriod = zoomParams[this.zoom].slot
       let slotWidth = zoomParams[this.zoom].width
       let slotsCount = ~~((this.toTime.valueOf() - this.fromTime.valueOf()) / slotPeriod)
@@ -895,6 +900,8 @@ $header-color: #606060;
             white-space: nowrap;
             background: $header-background;
             color: $header-color;
+            text-align: left;
+            text-transform: capitalize;
           }
         }
       }
@@ -926,6 +933,7 @@ $header-color: #606060;
 
             .gantt-data-header-slot-label {
               line-height: 130%;
+              text-transform: capitalize;
             }
           }
         }

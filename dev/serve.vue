@@ -19,6 +19,7 @@
         :items="items"
         :from="from"
         :to="to"
+        locale="pl"
       />
 
       <h1>Play with height</h1>
@@ -37,52 +38,50 @@
 <script>
 import Vue from 'vue';
 import VueDjGantt from '@/VueDjGantt.vue';
+import moment from "moment";
 
 export default Vue.extend({
-  name: 'ServeDev',
   components: {
     VueDjGantt
   },
+
   data() {
     return {
-      list: {
-        internalId: {
+      list: [
+        {
           id: "internalId",
-          data: "internalId",
           width: 80,
           header: {
-            content: "ID"
+            content: "# ID"
           }
         },
-        name: {
+        {
           id: "name",
-          data: "name",
           width: 200,
           header: {
-            content: "Nazwa"
+            content: "Resurce name"
           }
         },
-      },
+      ],
 
       from: (+ +new Date()) - (2 * 24 * 60 * 60 * 1000),
-      to: (+ +new Date()) + (4 * 24 * 60 * 60 * 1000),
+      to: moment().startOf('day').add(1, 'months'),
 
       rows: [
         {
           id: 1,
-          internalId: 'first',
+          internalId: '#1',
           name: 'First',
         },
         {
           id: 2,
-          internalId: 'second',
+          internalId: '#2',
           name: 'Second',
         },
       ],
 
       items: [
         {
-          id: 1,
           rowId: 1,
           label: `Some task`,
           style: {background: '#24abf2'},
@@ -92,13 +91,12 @@ export default Vue.extend({
           },
         },
         {
-          id: 1,
           rowId: 2,
           label: `Other task`,
           style: {background: '#abf224'},
           time: {
-            start: (+ +new Date()) + (0.5 * 24 * 60 * 60 * 1000),
-            end: (+ +new Date()) + (2.4 * 24 * 60 * 60 * 1000),
+            start: moment().add(12, 'hours'),
+            end: moment().add(2, 'days').add(4, 'hours'),
           },
         },
       ],
