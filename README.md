@@ -6,7 +6,7 @@
 
 Simple Gantt diagram component for Vue.
 
-[Live demo](https://jdoleczek.github.io/vue-dj-gantt/) - with Storybook (https://storybook.js.org/)
+[Live demo](https://jdoleczek.github.io/vue-dj-gantt/) - with Storybook ( https://storybook.js.org/ )
 
 Inspired by: https://www.npmjs.com/package/gantt-vue \
 Created with: https://www.npmjs.com/package/vue-sfc-rollup

@@ -300,18 +300,21 @@ export default {
     to: {},
 
     locale: {
+      /**
+       * Language support
+       */
       type: String,
       default: 'en',
     },
 
     height: {
       type: Number,
-      default: 0,
+      default: null,
     },
 
     list: {
-      type: Object,
-      default: () => {},
+      type: Array,
+      default: () => [],
     },
 
     rows: {

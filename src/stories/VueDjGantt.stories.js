@@ -2,21 +2,35 @@ import VueDjGantt from '../VueDjGantt.vue';
 import moment from "moment";
 
 export default {
-  title: 'VueDjGantt',
+  title: 'COMPONENT/VueDjGantt',
   component: VueDjGantt,
   argTypes: {
-    locale: { control: { type: 'select', options: ['pl', 'en', 'es'] } },
+    locale: {
+      description: 'language support',
+      control: { type: 'select', options: ['pl', 'en', 'es'] }
+    },
+
+    row: {
+      description: 'triggered when row label clicked',
+      action: '@row',
+    },
+
+    item: {
+      description: 'triggered when item clicked',
+      action: '@item',
+    },
   },
 };
 
 const Template = (args, { argTypes }) => ({
   props: Object.keys(argTypes),
   components: { VueDjGantt },
-  template: '<vue-dj-gantt v-bind="$props" />',
+  template: '<vue-dj-gantt @row="row" @item="item" v-bind="$props" />',
 });
 
-export const Basic = Template.bind({});
-Basic.args = {
+export const BasicUsage = Template.bind({});
+BasicUsage.storyName = 'Basic usage'
+BasicUsage.args = {
   list: [
     {
       id: "internalId",
