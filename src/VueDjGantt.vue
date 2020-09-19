@@ -32,8 +32,11 @@
           <div
             v-for="(row, rowIndex) in rows"
             :key="rowIndex"
+            :class="{hovered: hoveredRowIndex == rowIndex}"
             class="gantt-row-header-data-row"
             @click="$emit('row', row)"
+            @mouseenter="hoveredRowIndex = rowIndex"
+            @mouseleave="hoveredRowIndex = -1"
           >
             {{ row[rowHeader.id] }}
           </div>
@@ -54,10 +57,7 @@
             <div
               v-for="(slot, slotIndex) in dataSlots.calendar"
               :key="slotIndex"
-              :style="{
-                width: px(Math.max(slot.width, 260)),
-                left: slot.offset,
-              }"
+              :style="{width: px(Math.max(slot.width, 260)), left: px(slot.offset)}"
               class="gantt-data-header-calendar-date"
             >
               {{ slot.moment.format(calendarFormat) }}
@@ -76,8 +76,9 @@
             <div
               v-for="(slot, slotIndex) in dataSlots.slots"
               :key="slotIndex"
-              :style="{ width: px(dataSlotWidth), left: slot.offset }"
+              :style="{ width: px(dataSlotWidth), left: px(slot.offset) }"
               class="gantt-data-header-slot"
+              @click="$emit('time-slot', slot)"
             >
               <div
                 v-if="isSlotHeaderInLine"
@@ -87,7 +88,7 @@
                   v-for="(line, lineIndex) in labelDescription"
                   :key="lineIndex"
                   :style="{
-                    fontSize: `${line.size || 14}px`,
+                    fontSize: px(line.size || 14),
                     fontWeight: line.weight || 400,
                   }"
                 >
@@ -99,7 +100,7 @@
                   v-for="(line, lineIndex) in labelDescription"
                   :key="lineIndex"
                   :style="{
-                    fontSize: `${line.size || 14}px`,
+                    fontSize: px(line.size || 14),
                     fontWeight: line.weight || 400,
                   }"
                 >
@@ -135,24 +136,25 @@
               v-for="(cell, cellIndex) in cellsAndDataEditable.cells"
               :key="cellIndex"
               :style="{
-                left: cell.x,
-                top: `${cell.y}px`,
-                width: `${cell.width}px`,
-                height: `${cell.height}px`,
+                left: px(cell.x),
+                top: px(cell.y),
+                width: px(cell.width),
+                height: px(cell.height),
                 background: cell.background,
               }"
               :class="cell.classes"
               class="gantt-data-cell"
+              @click="$emit('cell', cell)"
             />
 
             <div
               v-for="(item, itemIndex) in cellsAndDataEditable.data"
               :key="1e9 + itemIndex"
               :style="{
-                left: `${item.x}px`,
-                top: `${item.y}px`,
-                width: `${item.width}px`,
-                height: `${item.height}px`,
+                left: px(item.x),
+                top: px(item.y),
+                width: px(item.width),
+                height: px(item.height),
                 background:
                   item.item.style && item.item.style.background
                     ? item.item.style.background
@@ -172,12 +174,12 @@
                 {{ item.item.label }}
               </div>
               <div
-                v-if="item.item.resizable"
+                v-if="resizable ? item.item.resizable !== false : item.item.resizable"
                 class="gantt-data-item-resizer"
                 @mousedown.stop="onItemResizeMouseDown(item)"
                 @mouseup.stop="onItemResizeMouseUp"
               >
-                <i class="ion ion-md-arrow-round-forward" />
+                ⮕
               </div>
             </div>
 
@@ -300,9 +302,6 @@ export default {
     to: {},
 
     locale: {
-      /**
-       * Language support
-       */
       type: String,
       default: 'en',
     },
@@ -364,6 +363,7 @@ export default {
       selectTo: null,
       selectedCellsBox: {},
       selectedCells: {},
+      hoveredRowIndex: -1,
 
       fromTime: this.from ? moment(this.from) : moment().startOf('day').add(-7, 'days'),
       toTime: this.to ? moment(this.to) : moment().startOf('day').add(1, 'months'),
@@ -412,6 +412,8 @@ export default {
         if (ev.deltaY < 0 && this.zoom < 16) {
           zoom(+1);
         }
+
+        this.$emit('zoom', this.zoom);
       } else {
         this.scrollX(this.$refs.scrollx.scrollLeft + ev.deltaX * 10);
         this.scrollY(this.$refs.scrolly.scrollTop + ev.deltaY * 10);
@@ -429,6 +431,7 @@ export default {
       this.$refs.datacalendar.scrollLeft = x;
       this.$refs.dataslots.scrollLeft = x;
       this.$refs.cells.scrollLeft = x;
+      this.$emit('scroll-x', x);
     },
 
     scrollY (scrollTop) {
@@ -436,6 +439,7 @@ export default {
       this.yOffset = y;
       this.$refs.scrolly.scrollTop = y;
       this.$refs.cells.scrollTop = y;
+      this.$emit('scroll-y', y);
 
       if (this.$refs.rowlabel) {
         this.$refs.rowlabel.forEach(el => el.scrollTop = y);
@@ -465,7 +469,7 @@ export default {
     onItemMouseDown (item) {
       this.$emit("item", item);
 
-      if (this.moveable) {
+      if (this.moveable ? item.item.moveable !== false : item.item.moveable) {
         this.moveItem = item;
       }
     },
@@ -477,7 +481,7 @@ export default {
     onItemResizeMouseDown (item) {
       this.$emit("item", item);
 
-      if (this.resizable) {
+      if (this.resizable ? item.item.resizable !== false : item.item.resizable) {
         this.resizeItem = item;
       }
     },
@@ -514,24 +518,38 @@ export default {
     onDataMove (ev) {
       if (ev.buttons == 1) {
         if (this.resizeItem) {
-          let time = this.resizeItem.item.time.end + Math.round(ev.movementX / this.pxPerMs);
+          let deltaX = Math.round(ev.movementX / this.pxPerMs)
+          let time = this.resizeItem.item.time.end + deltaX;
 
           if (this.snapEndFunction) {
-            time = this.snapEndFunction(this.resizeItem.item.time.end, Math.round(ev.movementX / this.pxPerMs), this.resizeItem.item) || time
+            time = this.snapEndFunction(this.resizeItem.item.time.end, deltaX, this.resizeItem.item) || time
           }
 
           this.resizeItem.item.time.end = time
+          this.resizeItem.width += deltaX
+
+          this.$emit('resized', {
+            item: this.resizeItem,
+            deltaX,
+          })
         } else if (this.moveItem) {
-          let time = this.moveItem.item.time.start + Math.round(ev.movementX / this.pxPerMs)
+          let deltaX = Math.round(ev.movementX / this.pxPerMs)
+          let time = this.moveItem.item.time.start + deltaX
           let refFrom = moment(this.fromTime).startOf("day")
 
           if (this.snapStartFunction) {
-            time = this.snapStartFunction(this.moveItem.item.time.start, Math.round(ev.movementX / this.pxPerMs), this.moveItem.item) || time
+            time = this.snapStartFunction(this.moveItem.item.time.start, deltaX, this.moveItem.item) || time
           }
 
           let diff = time - this.moveItem.item.time.start
           this.moveItem.item.time.start = time
           this.moveItem.item.time.end += diff
+          this.moveItem.x += deltaX
+
+          this.$emit('moved', {
+            item: this.resizeItem,
+            deltaX,
+          })
         } else if (this.selectFrom) {
           this.selectTo = this.getDataCoordinates(ev, this.$refs.cellswrap)
         }
@@ -586,20 +604,20 @@ export default {
     },
 
     dataWidth () {
-      return this.width - this.headerRowsWidth
+      return this.width - this.headerRowsWidth;
     },
 
     dataTotalHeight () {
-      return Object.keys(this.rows).length * colHeight
+      return Object.keys(this.rows).length * colHeight;
     },
 
     dataTotalWidth () {
-      return this.dataTotalSlots * zoomParams[this.zoom].width
+      return this.dataTotalSlots * zoomParams[this.zoom].width;
     },
 
     dataTotalSlots () {
-      let delta = Math.max(this.toTime.valueOf() - this.fromTime.valueOf(), 0)
-      return Math.floor(delta / zoomParams[this.zoom].slot)
+      let delta = Math.max(this.toTime.valueOf() - this.fromTime.valueOf(), 0);
+      return Math.floor(delta / zoomParams[this.zoom].slot);
     },
 
     dataSlotWidth () {
@@ -607,42 +625,42 @@ export default {
     },
 
     dataSlots () {
-      let from = moment(this.fromTime).locale(this.locale).startOf("day")
-      let slotPeriod = zoomParams[this.zoom].slot
-      let slotWidth = zoomParams[this.zoom].width
-      let slotsCount = ~~((this.toTime.valueOf() - this.fromTime.valueOf()) / slotPeriod)
-      let slots = []
-      let xOffset = this.xOffset
-      let xOffsetEnd = xOffset + this.dataWidth
-      let offset = 0
-      let calendar = []
-      let calendarRef = null
+      let from = moment(this.fromTime).locale(this.locale).startOf("day");
+      let slotPeriod = zoomParams[this.zoom].slot;
+      let slotWidth = zoomParams[this.zoom].width;
+      let slotsCount = ~~((this.toTime.valueOf() - this.fromTime.valueOf()) / slotPeriod);
+      let slots = [];
+      let xOffset = this.xOffset;
+      let xOffsetEnd = xOffset + this.dataWidth;
+      let offset = 0;
+      let calendar = [];
+      let calendarRef = null;
 
       for (let i = 0; i < slotsCount; i++) {
         if (offset + slotWidth > xOffset && offset < xOffsetEnd) {
           slots.push({
-            offset: this.px(Math.max(offset, xOffset) - 1),
-            offset_: Math.max(offset, xOffset) - 1,
+            offset: Math.max(offset, xOffset) - 1,
             moment: moment(from),
+            zoom: zoomParams[this.zoom],
           })
 
-          let current = slotPeriod == DAY_LONG ? from.month() : from.day()
+          let current = slotPeriod == DAY_LONG ? from.month() : from.day();
 
           if (current != calendarRef) {
-            calendarRef = current
+            calendarRef = current;
 
             calendar.push({
               moment: moment(from),
-              offset: this.px(Math.max(offset, xOffset) - 1),
+              offset: Math.max(offset, xOffset) - 1,
               width: slotWidth,
             })
           } else {
-            calendar[calendar.length - 1].width += slotWidth
+            calendar[calendar.length - 1].width += slotWidth;
           }
         }
 
-        from.add(1, slotPeriod == DAY_LONG ? "days" : "hours")
-        offset += slotWidth
+        from.add(1, slotPeriod == DAY_LONG ? "days" : "hours");
+        offset += slotWidth;
       }
 
       return {slots, calendar}
@@ -722,16 +740,16 @@ export default {
             let x2 = Math.max(this.selectFrom.x, this.selectTo.x)
             let y2 = Math.max(this.selectFrom.y, this.selectTo.y)
 
-            if (slot.offset_ < x2 && slot.offset_ + dataSlotWidth > x1 && row.y < y2 && row.y + colHeight > y1) {
+            if (slot.offset < x2 && slot.offset + dataSlotWidth > x1 && row.y < y2 && row.y + colHeight > y1) {
               let canSelect = true
 
               let cellData = {
                 rowId: row.row.id,
                 from: slot.moment.valueOf(),
                 to: slot.moment.valueOf() + slotPeriod - 1,
-                x1: slot.offset_,
+                x1: slot.offset,
                 y1: row.y,
-                x2: slot.offset_ + dataSlotWidth,
+                x2: slot.offset + dataSlotWidth,
                 y2: row.y + colHeight,
               }
 
@@ -791,7 +809,7 @@ export default {
 
   watch: {
     cellsAndData () {
-      this.cellsAndDataEditable = JSON.parse(JSON.stringify(this.cellsAndData))
+      this.cellsAndDataEditable = Object.assign({}, this.cellsAndData)
     },
 
     zoom () {
@@ -808,12 +826,10 @@ export default {
   },
 
   mounted () {
-    // todo locale
-    // moment.locale("pl-my", this.config.locale)
     // this.fromTime = this.from ? moment(this.from) : moment().startOf('day').add(-7, 'days')
     // this.toTime = this.to ? moment(this.to) : moment().startOf('day').add(3, 'months')
     this.width = this.$refs.gantt.clientWidth
-    this.cellsAndDataEditable = JSON.parse(JSON.stringify(this.cellsAndData))
+    this.cellsAndDataEditable = Object.assign({}, this.cellsAndData)
     this.scrollX(0)
     this.scrollY(0)
   },
@@ -865,7 +881,7 @@ $header-color: #606060;
         color: #555;
         cursor: pointer;
 
-        &:hover {
+        &.hovered {
           background: #f8f8f8;
         }
       }
